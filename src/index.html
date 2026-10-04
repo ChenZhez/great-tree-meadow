@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Great Tree Meadow</title>
+    <meta
+      name="description"
+      content="A cozy 3D exploration game. Wander a fairyland meadow with your piglet companion and bring the great tree back into bloom."
+    />
+    <meta name="theme-color" content="#ffe2a6" />
+    <meta name="color-scheme" content="light" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M29 40h6v16h-6z' fill='%238a5a3c' stroke='%232e3a59' stroke-width='3'/%3E%3Ccircle cx='32' cy='26' r='18' fill='%237cc85e' stroke='%232e3a59' stroke-width='3'/%3E%3Ccircle cx='25' cy='22' r='3' fill='%23ffb3c6'/%3E%3Ccircle cx='39' cy='28' r='3' fill='%23ffb3c6'/%3E%3Ccircle cx='31' cy='33' r='2.5' fill='%23ffd23f'/%3E%3C/svg%3E"
+    />
+    <!-- @fonts -->
+    <script>
+      /* Pick the saved language before first paint so the loading screen matches it. */
+      (function () {
+        var l = 'en';
+        try {
+          var s = JSON.parse(localStorage.getItem('great-tree-meadow-settings') || '{}');
+          if (s.lang === 'zh' || s.lang === 'ja') l = s.lang;
+        } catch (e) {}
+        document.documentElement.lang = l === 'zh' ? 'zh-CN' : l;
+      })();
+    </script>
+
+    <style>
+      /* @styles */
+    </style>
+  </head>
+  <body class="no-touch">
+    <canvas id="c" tabindex="0" aria-label="巨树花海 3D 场景"></canvas>
+
+    <div id="hud" class="hidden">
+      <div class="tl">
+        <h1 class="serif">巨树花海</h1>
+        <br /><span id="zoneName" class="paper serif"></span>
+      </div>
+      <div class="tr">
+        <div class="row">
+          <div class="pill paper" title="光之种子">
+            <svg class="seedIco" viewBox="0 0 16 20">
+              <path
+                d="M8 2C4 7 3 10 3 13a5 5 0 0 0 10 0c0-3-1-6-5-11z"
+                fill="#d8ff8a"
+                stroke="#2e3a59"
+                stroke-width="1.6"
+              />
+              <path d="M8 3c1.5-2 4-2 5-1-1 1.5-3 2-5 1z" fill="#7cc85e" stroke="#2e3a59" stroke-width="1.2" /></svg
+            ><span id="seedCount">0 / 12</span>
+          </div>
+          <div class="pill paper" title="花币">
+            <svg class="seedIco" viewBox="0 0 20 20">
+              <circle cx="10" cy="10" r="8" fill="#ffd23f" stroke="#2e3a59" stroke-width="1.6" />
+              <path d="M10 5.5l1.3 2.8 3 .4-2.2 2.1.6 3L10 12.3l-2.7 1.5.6-3-2.2-2.1 3-.4z" fill="#fff4c0" /></svg
+            ><span id="coinCount">0</span>
+          </div>
+          <div class="pill paper" title="星星碎片">
+            <svg class="seedIco" viewBox="0 0 20 20">
+              <path
+                d="M10 1.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L10 14.9l-5.2 2.8 1-5.9L1.5 7.7l5.9-.8z"
+                fill="#ffe07a"
+                stroke="#2e3a59"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              /></svg
+            ><span id="shardCount">0</span>
+          </div>
+        </div>
+        <div class="row">
+          <button class="ibtn paper" id="btnHome" aria-label="回家">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 11l9-7 9 7" />
+              <path d="M5 10v10h14V10" />
+              <path d="M10 20v-6h4v6" />
+            </svg>
+          </button>
+          <button class="ibtn paper" id="btnMap" aria-label="地图">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z" />
+              <path d="M9 4v14M15 6v14" />
+            </svg>
+          </button>
+          <button class="ibtn paper" id="btnWear" aria-label="换装">
+            <svg viewBox="0 0 24 24"><path d="M9 3l3 2 3-2 5 3-2 4-2-1v12H8V9L6 10 4 6z" /></svg>
+          </button>
+          <button class="ibtn paper" id="btnTime" aria-label="切换黄昏和夜晚">
+            <svg viewBox="0 0 24 24" id="timeIco"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
+          </button>
+          <button class="ibtn paper" id="btnJournal" aria-label="图鉴">
+            <svg viewBox="0 0 24 24">
+              <path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z" />
+              <path d="M5 17a3 3 0 0 1 3-3h11" />
+            </svg>
+          </button>
+          <button class="ibtn paper" id="btnTasks" aria-label="每日委托">
+            <svg viewBox="0 0 24 24">
+              <rect x="5" y="4" width="14" height="17" rx="2" />
+              <path d="M9 4V2.5h6V4M8.5 10l2 2 4-4M8.5 16h7" />
+            </svg>
+          </button>
+          <button class="ibtn paper" id="btnSet" aria-label="设置">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M10.3 2.6h3.4l.5 2.7a7.2 7.2 0 0 1 1.9 1.1l2.6-.9 1.7 2.9-2.1 1.8a7.4 7.4 0 0 1 0 2.2l2.1 1.8-1.7 2.9-2.6-.9a7.2 7.2 0 0 1-1.9 1.1l-.5 2.7h-3.4l-.5-2.7a7.2 7.2 0 0 1-1.9-1.1l-2.6.9-1.7-2.9 2.1-1.8a7.4 7.4 0 0 1 0-2.2L3.6 8.4l1.7-2.9 2.6.9a7.2 7.2 0 0 1 1.9-1.1z"
+              />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+        </div>
+        <canvas id="mini" width="272" height="272" aria-label="小地图"></canvas>
+        <div id="homeBar" class="row">
+          <button class="btn" id="btnBuild">布置小家</button><button class="btn ghost" id="btnOut">出门</button>
+        </div>
+      </div>
+      <div id="keys" class="paper">
+        <b>WASD</b> 走　<b>Shift</b> 跑　<b>空格</b> 跳　<b>E</b> 互动 / 团子菜单　<b>Q</b> 让团子闻闻　<b>M</b>
+        地图　<b>G</b> 回家　<b>F</b> 钓鱼　<b>J</b> 图鉴　<b>T</b> 委托　<b>Esc</b> 设置　<b>B</b> 布置小家　<b>C</b>
+        换装　<b>N</b> 昼夜　<b>H</b> 隐藏界面<br />拖动转视角　滚轮缩放　点击水面也能走过去
+      </div>
+      <div id="joy"><div id="knob"></div></div>
+      <div id="actions">
+        <button class="act fish hidden" id="fishBtn" type="button" aria-label="钓鱼">
+          <b>钓鱼</b><small>F</small>
+        </button>
+        <button class="act" data-act="sniff" type="button" aria-label="让团子闻闻">闻闻<small>Q</small></button>
+        <button class="act" data-act="jump" type="button" aria-label="跳">跳<small>空格</small></button>
+        <button class="act main" data-act="use" id="useBtn" type="button" aria-label="互动">
+          摸摸<small>E</small>
+        </button>
+      </div>
+    </div>
+
+    <div id="prompt" class="paper"></div>
+    <div id="say"></div>
+    <div id="toast">
+      <div class="k serif"></div>
+      <h2 class="serif"></h2>
+      <p></p>
+    </div>
+
+    <div id="start" class="title">
+      <div class="tTop">
+        <div class="langSeg" id="langSeg" role="group" aria-label="Language" data-notr>
+          <button type="button" data-lang="en" lang="en">English</button
+          ><button type="button" data-lang="zh" lang="zh-CN">中文</button
+          ><button type="button" data-lang="ja" lang="ja">日本語</button>
+        </div>
+      </div>
+      <div class="tCenter">
+        <div class="logo serif" id="logoMain">巨树花海</div>
+        <div class="logoSub" id="logoSub" data-notr>GREAT TREE MEADOW</div>
+        <div class="tMenu">
+          <button class="tBtn primary" id="btnGo">开始游戏</button>
+          <button class="tBtn" id="btnTSet">设置</button>
+          <button class="tBtn" id="btnTHelp">玩法说明</button>
+          <button class="tBtn" id="btnTCred">制作人员</button>
+        </div>
+      </div>
+      <div class="tFoot" data-notr><span id="verTxt"></span> · © 2026 Zhe</div>
+    </div>
+    <div id="intro" class="hidden">
+      <p id="introL1" class="serif"></p>
+      <p id="introL2"></p>
+      <small id="introSkip">点击跳过</small>
+    </div>
+    <div id="helpBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper helpCard">
+        <h2 class="serif">玩法说明</h2>
+        <div class="tabs" id="helpTabs">
+          <button data-t="ctl" class="on">操作</button><button data-t="play">玩法</button
+          ><button data-t="story">故事</button>
+        </div>
+        <div class="hPane" data-p="ctl">
+          <table class="keysT">
+            <tr>
+              <td>移动</td>
+              <td><kbd>W A S D</kbd> / 方向键　·　手机：左下摇杆</td>
+            </tr>
+            <tr>
+              <td>奔跑</td>
+              <td><kbd>Shift</kbd>　·　手机：摇杆推到底</td>
+            </tr>
+            <tr>
+              <td>跳</td>
+              <td><kbd>空格</kbd></td>
+            </tr>
+            <tr>
+              <td>互动 / 团子菜单</td>
+              <td><kbd>E</kbd>　·　手机：右下大按钮</td>
+            </tr>
+            <tr>
+              <td>让团子闻闻</td>
+              <td><kbd>Q</kbd></td>
+            </tr>
+            <tr>
+              <td>钓鱼</td>
+              <td><kbd>F</kbd>（面朝水边）</td>
+            </tr>
+            <tr>
+              <td>地图 · 回家 · 布置</td>
+              <td><kbd>M</kbd> · <kbd>G</kbd> · <kbd>B</kbd></td>
+            </tr>
+            <tr>
+              <td>图鉴 · 委托 · 换装 · 昼夜</td>
+              <td><kbd>J</kbd> · <kbd>T</kbd> · <kbd>C</kbd> · <kbd>N</kbd></td>
+            </tr>
+            <tr>
+              <td>设置 / 暂停</td>
+              <td><kbd>Esc</kbd></td>
+            </tr>
+            <tr>
+              <td>镜头</td>
+              <td>拖动转视角，滚轮或双指缩放；点击地面可以直接走过去</td>
+            </tr>
+          </table>
+        </div>
+        <div class="hPane hidden" data-p="play">
+          <ul>
+            <li>看到能互动的东西，头上会出现提示</li>
+            <li>团子鼻子很灵，让它闻闻就会带你去找种子</li>
+            <li>右上角的月亮可以让天黑下来，有些东西只在夜里出现</li>
+            <li>衣服图标可以给小夏和团子换装</li>
+            <li>
+              花海外圈还有十个新地方：丘陵、樱花堤、星光浅滩、金枫谷、镜之湖……路上的传送花台点亮后，打开地图就能传送
+            </li>
+            <li>走到团子身边按互动，可以喂它、扔球、抱它、跳舞、合影</li>
+            <li>小房子按钮一键回家：做饭、睡觉、布置家具，捡到的星星碎片可以换新家具</li>
+            <li>面朝水边可以钓鱼；靠近蝴蝶可以捕虫；码头旁的小卖部能买种子、卖东西</li>
+            <li>每天都有新的委托，完成后能拿花币；图鉴里可以看收集进度和成就</li>
+          </ul>
+        </div>
+        <div class="hPane hidden" data-p="story">
+          <p>水中央有一棵很老很老的巨树。它从前每到傍晚都会开花，后来十二颗光之种子被风吹散了，它就再也没有开过。</p>
+          <p>和团子一起，在花田、石环、迷宫、蘑菇村、瀑布后面、热气球上……把十二颗光之种子找回来吧。</p>
+        </div>
+        <div class="row" style="justify-content: flex-end; margin-top: 12px">
+          <button class="btn ghost" data-close>知道了</button>
+        </div>
+      </div>
+    </div>
+    <div id="credBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper credCard">
+        <div class="credLogo serif">巨树花海</div>
+        <div class="credSub" data-notr>
+          <span class="gameName">Great Tree Meadow</span> · <span class="verTxt"></span>
+        </div>
+        <dl class="cred">
+          <dt>制作人</dt>
+          <dd data-notr>Zhe</dd>
+          <dt>游戏设计</dt>
+          <dd data-notr>Zhe</dd>
+          <dt>美术与场景</dt>
+          <dd data-notr>Zhe</dd>
+          <dt>程序</dt>
+          <dd data-notr>Zhe</dd>
+          <dt>音乐与音效</dt>
+          <dd data-notr>Zhe</dd>
+          <dt>文案与本地化</dt>
+          <dd data-notr>Zhe</dd>
+          <dt>测试</dt>
+          <dd data-notr>Zhe</dd>
+          <dt>特别感谢</dt>
+          <dd>团子，以及每一位来花海散步的你</dd>
+        </dl>
+        <p class="credTech">
+          使用 three.js（MIT License）制作<br />字体：Nunito、站酷小薇体、Noto Sans SC、Noto Sans JP、Kiwi Maru（SIL Open Font License 1.1）
+        </p>
+        <p class="credCopy" data-notr>© 2026 Zhe. All rights reserved.</p>
+        <div class="row" style="justify-content: center; margin-top: 10px">
+          <button class="btn ghost" data-close>返回</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="letterBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper letter">
+        <p>给小夏和团子：</p>
+        <p>
+          　　很久以前，巨树每到傍晚都会开一次花，整片水面都是粉色的。后来一阵大风把十二颗光之种子吹散了，它就再也没开过。
+        </p>
+        <p>
+          　　如果你们在花田里、石头圈里、瀑布后面，看到会发光的小东西，请把它们带回树下。有一颗我猜挂在了巨树最顶上，得坐热气球才够得着。
+        </p>
+        <p>　　这一颗我一直收在信箱里，先交给你们。</p>
+        <p class="sign">住在树洞里的松鼠奶奶</p>
+        <div class="row" style="justify-content: flex-end; margin-top: 10px">
+          <button class="btn" id="btnLetter">收下</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="wardrobe" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper">
+        <h2 class="serif">衣柜</h2>
+        <p class="sub">小夏和团子会一起换上配套的衣服</p>
+        <div id="outfits"></div>
+        <div class="row" style="justify-content: flex-end; margin-top: 12px">
+          <button class="btn ghost" id="btnWearClose">关上衣柜</button>
+        </div>
+      </div>
+    </div>
+    <div id="pigMenu" class="paper hidden">
+      <div class="pmHead"><b class="serif">团子</b><span id="loveTxt">♥ 0</span></div>
+      <div class="pmGrid">
+        <button data-p="pet"><i>1</i>摸摸</button><button data-p="feed"><i>2</i>喂零食</button
+        ><button data-p="ball"><i>3</i>扔小球</button
+        ><button data-p="carry"><i>4</i><span id="carryTxt">抱起来</span></button>
+        <button data-p="dance"><i>5</i>一起跳舞</button><button data-p="trick"><i>6</i>握握手</button
+        ><button data-p="photo"><i>7</i>合个影</button><button data-p="close"><i>0</i>关闭</button>
+      </div>
+    </div>
+    <div id="note" class="paper" role="status" aria-live="polite"></div>
+    <div id="fps" class="hidden"></div>
+    <div id="flash"></div>
+    <div id="photoBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper photoCard">
+        <img id="photoImg" alt="合影" />
+        <p id="photoCap" class="serif"></p>
+        <p class="sub photoHint touchOnly">也可以长按照片保存</p>
+        <div class="row" style="justify-content: flex-end; gap: 8px">
+          <button class="btn ghost" id="btnPhotoSave">保存照片</button
+          ><button class="btn" id="btnPhotoClose">好</button>
+        </div>
+      </div>
+    </div>
+    <div id="mapBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper mapCard">
+        <h2 class="serif">花海地图</h2>
+        <p class="sub">点亮的传送花台可以直接点击传送</p>
+        <canvas id="bigmap" width="720" height="720"></canvas>
+        <div class="row" style="justify-content: flex-end; margin-top: 10px">
+          <button class="btn ghost" id="btnMapClose">收起地图</button>
+        </div>
+      </div>
+    </div>
+    <div id="cookBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper">
+        <h2 class="serif">做点什么吃？</h2>
+        <p class="sub" id="invTxt"></p>
+        <div id="recipes"></div>
+        <div class="row" style="justify-content: flex-end; margin-top: 10px">
+          <button class="btn ghost" id="btnCookClose">算了</button>
+        </div>
+      </div>
+    </div>
+    <div id="bookBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper letter">
+        <p id="bookTxt"></p>
+        <div class="row" style="justify-content: flex-end; margin-top: 10px">
+          <button class="btn" id="btnBookClose">合上书</button>
+        </div>
+      </div>
+    </div>
+    <div id="buildUI" class="hidden">
+      <div id="bTools" class="paper hidden">
+        <span id="bHint"></span><button class="btn" data-b="place">放这里</button
+        ><button class="btn ghost" data-b="rot">旋转</button><button class="btn ghost" data-b="move">移动</button
+        ><button class="btn ghost" data-b="store">收起</button><button class="btn ghost" data-b="cancel">取消</button>
+      </div>
+      <div id="bSheet" class="paper">
+        <div id="bTabs"></div>
+        <div id="bItems"></div>
+        <div class="bFoot"><span id="bShard"></span><button class="btn" id="btnBuildDone">完成布置</button></div>
+      </div>
+    </div>
+    <div id="fishUI" class="hidden">
+      <div id="fishMsg" class="paper"></div>
+      <div id="fishBar" class="paper hidden">
+        <div id="fbTrack">
+          <div id="fbZone"></div>
+          <div id="fbFish">
+            <svg viewBox="0 0 60 36">
+              <path
+                d="M6 18c8-12 26-14 38-4l10-8v24l-10-8C32 32 14 30 6 18z"
+                fill="#7fd8ff"
+                stroke="#2e3a59"
+                stroke-width="3"
+              />
+            </svg>
+          </div>
+        </div>
+        <div id="fbProgW"><div id="fbProg"></div></div>
+      </div>
+    </div>
+    <div id="catchCard" class="paper hidden">
+      <div id="catchIco" class="ico"></div>
+      <div><small id="catchK"></small><b id="catchN" class="serif"></b><span id="catchS"></span></div>
+    </div>
+    <div id="taskBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper">
+        <h2 class="serif">每日委托</h2>
+        <p class="sub">每天都会换新的三件小事，完成可以拿花币。</p>
+        <div id="taskList"></div>
+        <div class="row" style="justify-content: flex-end; margin-top: 10px">
+          <button class="btn ghost" data-close>收起</button>
+        </div>
+      </div>
+    </div>
+    <div id="journalBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper jCard">
+        <h2 class="serif">图鉴 <span id="jCount" class="sub"></span></h2>
+        <div id="jTabs" class="tabs">
+          <button data-t="fish">鱼类</button><button data-t="bug">昆虫</button><button data-t="zone">地点</button
+          ><button data-t="ach">成就</button>
+        </div>
+        <div id="jGrid"></div>
+        <div class="row" style="justify-content: flex-end; margin-top: 10px">
+          <button class="btn ghost" data-close>合上图鉴</button>
+        </div>
+      </div>
+    </div>
+    <div id="shopBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper">
+        <h2 class="serif">
+          小卖部 <span class="sub">花币 <b id="shopCoins">0</b></span>
+        </h2>
+        <div id="shopTabs" class="tabs"><button data-t="buy">买东西</button><button data-t="sell">卖东西</button></div>
+        <div id="shopList"></div>
+        <div class="row" style="justify-content: flex-end; margin-top: 10px">
+          <button class="btn ghost" data-close>谢谢老板</button>
+        </div>
+      </div>
+    </div>
+    <div id="pickBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper">
+        <h2 class="serif" id="pickT"></h2>
+        <div id="pickL"></div>
+        <div class="row" style="justify-content: flex-end"><button class="btn ghost" data-close>算了</button></div>
+      </div>
+    </div>
+    <div id="setBox" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="card paper setCard">
+        <h2 class="serif">设置</h2>
+        <div class="tabs" id="setTabs">
+          <button data-t="gen" class="on">通用</button><button data-t="gfx">画面</button
+          ><button data-t="comf">舒适</button><button data-t="snd">声音</button><button data-t="ctl">操作</button
+          ><button data-t="data">存档</button><button data-t="about">关于</button>
+        </div>
+        <div class="sPane" data-p="gen">
+          <div class="setRow">
+            <span>语言 / Language</span>
+            <div class="seg" data-k="lang" data-notr>
+              <button data-v="en" lang="en">English</button><button data-v="zh" lang="zh-CN">中文</button
+              ><button data-v="ja" lang="ja">日本語</button>
+            </div>
+          </div>
+          <div class="setRow">
+            <span>文字大小</span>
+            <div class="seg" data-k="ts">
+              <button data-v="s">小</button><button data-v="m">标准</button><button data-v="l">大</button>
+            </div>
+          </div>
+          <div class="setRow">
+            <span>显示小地图</span><label class="sw"><input type="checkbox" data-k="mini" /><i></i></label>
+          </div>
+          <div class="setRow">
+            <span>显示按键提示</span><label class="sw"><input type="checkbox" data-k="keys" /><i></i></label>
+          </div>
+          <div class="setRow">
+            <span>显示帧率</span><label class="sw"><input type="checkbox" data-k="fps" /><i></i></label>
+          </div>
+        </div>
+        <div class="sPane hidden" data-p="gfx">
+          <div class="setRow">
+            <span>画质<small>自动：卡顿时会切换到「流畅」</small></span>
+            <div class="seg" data-k="quality">
+              <button data-v="auto">自动</button><button data-v="low">流畅</button><button data-v="mid">标准</button
+              ><button data-v="high">精致</button>
+            </div>
+          </div>
+          <div class="setRow">
+            <span>亮度</span><input type="range" data-k="bright" min="0.7" max="1.3" step="0.05" />
+          </div>
+          <div class="setRow">
+            <span>光晕强度<small>觉得刺眼可以调低</small></span
+            ><input type="range" data-k="bloom" min="0" max="1.5" step="0.1" />
+          </div>
+          <div class="setRow"><span>视野范围</span><input type="range" data-k="fov" min="34" max="70" step="1" /></div>
+          <div class="setRow">
+            <span>减少闪光与特效<small>关掉拍照闪光、光束，减弱水面闪烁和光点</small></span
+            ><label class="sw"><input type="checkbox" data-k="calm" /><i></i></label>
+          </div>
+        </div>
+        <div class="sPane hidden" data-p="comf">
+          <div class="comfTip">
+            容易晕 3D 的话，打开「防晕模式」：视野更宽、镜头不再自动旋转、镜头紧跟角色、减少闪光。
+          </div>
+          <div class="setRow">
+            <span>防晕模式</span><label class="sw"><input type="checkbox" data-k="nausea" /><i></i></label>
+          </div>
+          <div class="setRow">
+            <span>镜头自动旋转<small>站着不动时镜头慢慢转</small></span
+            ><label class="sw"><input type="checkbox" data-k="autoRot" /><i></i></label>
+          </div>
+          <div class="setRow">
+            <span>镜头跟随</span>
+            <div class="seg" data-k="follow">
+              <button data-v="soft">柔和</button><button data-v="tight">紧跟</button>
+            </div>
+          </div>
+          <div class="setRow">
+            <span>镜头默认距离</span>
+            <div class="seg" data-k="camD">
+              <button data-v="near">近</button><button data-v="mid">中</button><button data-v="far">远</button>
+            </div>
+          </div>
+          <div class="setRow">
+            <span>镜头灵敏度</span><input type="range" data-k="sens" min="0.4" max="2" step="0.1" />
+          </div>
+          <div class="setRow">
+            <span>左右反转</span><label class="sw"><input type="checkbox" data-k="invX" /><i></i></label>
+          </div>
+          <div class="setRow">
+            <span>上下反转</span><label class="sw"><input type="checkbox" data-k="invY" /><i></i></label>
+          </div>
+        </div>
+        <div class="sPane hidden" data-p="snd">
+          <div class="setRow">
+            <span>音乐音量</span><input type="range" data-k="music" min="0" max="1" step="0.05" />
+          </div>
+          <div class="setRow"><span>音效音量</span><input type="range" data-k="sfx" min="0" max="1" step="0.05" /></div>
+          <div class="setRow">
+            <span>静音</span
+            ><button class="btn ghost small" id="btnSound" aria-label="开关声音">
+              静音
+              <svg viewBox="0 0 24 24" id="sndIco">
+                <path d="M4 9h4l5-4v14l-5-4H4z" />
+                <path d="M16.5 8.5a5 5 0 0 1 0 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="sPane hidden" data-p="ctl">
+          <div class="setRow">
+            <span>奔跑方式</span>
+            <div class="seg" data-k="runMode">
+              <button data-v="hold">按住 Shift</button><button data-v="toggle">按一下切换</button>
+            </div>
+          </div>
+          <div class="setRow">
+            <span>手机按键布局<small>左手：摇杆在右，按钮在左</small></span>
+            <div class="seg" data-k="hand"><button data-v="r">右手</button><button data-v="l">左手</button></div>
+          </div>
+          <p class="sub" style="margin-top: 8px">完整按键说明见「玩法说明」。</p>
+          <div class="row">
+            <button class="btn ghost small" id="btnHowTo">玩法说明</button
+            ><button class="btn ghost small" id="btnFull">全屏</button>
+          </div>
+        </div>
+        <div class="sPane hidden" data-p="data">
+          <p class="sub">进度自动保存在这台设备的浏览器里。换设备或清理浏览器前，可以先导出存档。</p>
+          <div class="row setBtns">
+            <button class="btn ghost small" id="btnExport">导出存档</button
+            ><button class="btn ghost small" id="btnImport">导入存档</button
+            ><button class="btn ghost small danger" id="btnReset">清空存档</button>
+          </div>
+          <textarea id="saveTxt" class="hidden" rows="4" spellcheck="false"></textarea>
+        </div>
+        <div class="sPane hidden" data-p="about">
+          <p>
+            <b class="serif" style="font-size: 20px">巨树花海</b>
+            <span data-notr><span class="gameName">Great Tree Meadow</span> · <span class="verTxt"></span></span>
+          </p>
+          <p class="sub">一个可以慢慢散步的仙境小游戏。</p>
+          <div class="row"><button class="btn ghost small" id="btnCred2">制作人员</button></div>
+          <p class="sub" data-notr style="margin-top: 10px">© 2026 Zhe</p>
+        </div>
+        <div class="row" style="justify-content: space-between; margin-top: 14px">
+          <button class="btn ghost" id="btnToTitle">回到标题</button
+          ><button class="btn" id="btnResume">继续游戏</button>
+        </div>
+        <div style="display: none">
+          <button class="ibtn paper" id="btnHelp" aria-label="说明">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7" />
+              <path d="M12 17h.01" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="veil" class="on">
+      <span id="veilTxt" class="hidden"></span
+      ><span class="boot" data-notr
+        ><span data-l="en">Entering the meadow…</span><span data-l="zh">正在进入花海</span
+        ><span data-l="ja">花の海へ…</span></span
+      >
+    </div>
+    <div id="err" data-notr>
+      <span data-l="en"
+        >This browser can't run WebGL right now. Please try another browser, or check that hardware acceleration is
+        turned on, then reload.</span
+      ><span data-l="zh">这个浏览器暂时无法运行 WebGL。请换一个浏览器，或者确认已开启硬件加速后刷新页面。</span
+      ><span data-l="ja"
+        >このブラウザでは WebGL
+        を利用できません。別のブラウザを使うか、ハードウェアアクセラレーションが有効になっているか確認してから、ページを再読み込みしてください。</span
+      >
+    </div>
+    <div id="storageWarn" class="paper hidden" role="alert">
+      <span>浏览器不允许保存数据，关掉页面后进度可能会丢失。可以在设置里导出存档备份。</span
+      ><button class="btn ghost" id="btnStorageOk" type="button">知道了</button>
+    </div>
+    <!-- @scripts -->
+  </body>
+</html>

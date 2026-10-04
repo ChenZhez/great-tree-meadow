@@ -1,0 +1,32 @@
+{
+  "name": "great-tree-meadow",
+  "version": "1.0.0",
+  "description": "A cozy 3D exploration game for the browser, built with three.js.",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "build:dev": "node tools/build.mjs --dev",
+    "fonts": "node tools/fetch-fonts.mjs",
+    "i18n": "node tools/i18n-check.mjs",
+    "audit": "node tools/release-audit.mjs",
+    "test": "node tests/run.mjs",
+    "package": "node tools/package.mjs",
+    "release": "npm run i18n && npm run build && npm run audit && npm run package",
+    "serve": "node tools/serve.mjs",
+    "format": "prettier --write \"src/**/*.{js,css,json}\" \"tools/**/*.mjs\" \"tests/**/*.mjs\"",
+    "screenshots": "node tools/build.mjs --dev --fonts && node tests/screenshots.mjs"
+  },
+  "author": "Zhe",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "fflate": "^0.8.3",
+    "playwright": "^1.56.0",
+    "prettier": "^3.3.3",
+    "subset-font": "^2.9.0",
+    "three": "^0.128.0"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18.17"
+  }
+}
