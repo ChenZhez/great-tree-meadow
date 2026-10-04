@@ -10,10 +10,13 @@ for the twelve glow seeds that once made the great tree in the middle bloom.
 
 ![Title screen](docs/screenshots/title.png)
 
-| | |
-|---|---|
-| ![The meadow by day](docs/screenshots/meadow-day.png) | ![The waterfall](docs/screenshots/waterfall-day.png) |
-| ![The great tree at night](docs/screenshots/tree-night.png) | ![Phone layout](docs/screenshots/phone.png) |
+![The meadow by day](docs/screenshots/meadow-day.png)
+
+![The waterfall](docs/screenshots/waterfall-day.png)
+
+![The great tree at night](docs/screenshots/tree-night.png)
+
+<p><img src="docs/screenshots/phone.png" alt="Phone layout" width="280"></p>
 
 ## Features
 
@@ -48,10 +51,10 @@ for the twelve glow seeds that once made the great tree in the middle bloom.
 
 ## Building
 
-Requirements: Node.js 18.17 or newer.
+Requirements: Node.js 24 LTS (also used by CI).
 
 ```bash
-npm ci
+npm ci --ignore-scripts
 npm run build          # dist/index.html, the release page
 npm run serve          # optional: serve dist/ on port 8080
 ```
@@ -68,6 +71,7 @@ Other scripts:
 | `npm run i18n` | checks that every source string has an English and a Japanese translation |
 | `npm test` | browser regression tests (needs `build:dev` and `build` first) |
 | `npm run audit` | pre-release checks: no debug code, no local paths, no external requests |
+| `npm run test:package` | checks the packaged HTML and license notices (run `package` first) |
 | `npm run package` | `release/great-tree-meadow-<version>-web.zip`, ready to upload to itch.io |
 | `npm run release` | i18n check, build, audit and package in one go |
 | `npm run format` | formats the code with Prettier |
