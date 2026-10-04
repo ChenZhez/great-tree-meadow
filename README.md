@@ -6,7 +6,7 @@ A cozy 3D exploration game that runs in the browser. You and Dumpling, a small
 pink piglet, wander a fairyland meadow built on a shallow mirror lake, looking
 for the twelve glow seeds that once made the great tree in the middle bloom.
 
-The browser release will be available here once GitHub Pages is deployed.
+[Play in your browser](https://chenzhez.github.io/great-tree-meadow/).
 
 ![Title screen](docs/screenshots/title.png)
 
