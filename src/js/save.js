@@ -16,14 +16,6 @@ function migrateSave(input) {
   const record = (v, test) => object(v) && Object.entries(v).every(([k, x]) => id(k) && test(x, k));
   const style = (v) =>
     object(v) && count(v.wall, 4) && count(v.floor, 3) && Object.keys(v).every((k) => ['wall', 'floor'].includes(k));
-  const crop = (v) =>
-    v === 0 ||
-    v === null ||
-    (object(v) &&
-      ['berry', 'carrot', 'pumpkin', 'mush', 'sunflower'].includes(v.crop) &&
-      count(v.t0) &&
-      count(v.w, 3) &&
-      Object.keys(v).every((k) => ['crop', 't0', 'w'].includes(k)));
   if (!object(input)) bad();
   const version = input.saveVersion === undefined ? 0 : input.saveVersion;
   if (!count(version, 1) || !Array.isArray(input.seeds)) bad();
@@ -69,7 +61,14 @@ function migrateSave(input) {
           number(a[2], -100, 100) &&
           count(a[3], 3) &&
           (a.length < 5 || count(a[4], 3)) &&
-          (a.length < 6 || crop(a[5])),
+          (a.length < 6 ||
+            a[5] === 0 ||
+            a[5] === null ||
+            (object(a[5]) &&
+              ['berry', 'carrot', 'pumpkin', 'mush', 'sunflower'].includes(a[5].crop) &&
+              count(a[5].t0) &&
+              count(a[5].w, 3) &&
+              Object.keys(a[5]).every((k) => ['crop', 't0', 'w'].includes(k)))),
       ),
     photos: (v) =>
       array(
