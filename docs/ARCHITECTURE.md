@@ -134,8 +134,10 @@ Japanese entries to the two locale files, then run `npm run i18n`.
 
 Progress is stored in `localStorage` under `great-tree-meadow-v1`, settings
 under `great-tree-meadow-settings`. The save object carries a `saveVersion`;
-`migrateSave()` upgrades older data step by step and is also applied to
-imported saves. If the browser refuses to store data, the game shows a notice
+`migrateSave()` in `save.js` validates types, ranges and nested records before
+stored or imported data reaches game state, and accepts legacy saves without a
+version field. Unknown fields and future versions are rejected. Photo URLs are
+limited to embedded JPEG/PNG data; task text is inserted as DOM text. If the browser refuses to store data, the game shows a notice
 once and keeps running. Saves can be exported and imported as text from the
 settings.
 

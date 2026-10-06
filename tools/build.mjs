@@ -29,6 +29,7 @@ export const SOURCES = [
   'world-assemble.js',
   'world-landmarks.js',
   'world-outer.js',
+  'save.js',
   'game.js',
   'companion.js',
   'home.js',

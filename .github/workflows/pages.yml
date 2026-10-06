@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Publish tested release
 
 on:
   push:
@@ -13,7 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  prepare:
+    outputs:
+      run_id: ${{ steps.ci.outputs.run_id }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -23,39 +25,38 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - name: Require successful CI for this commit
+      - name: Select successful main-branch CI for this commit
+        id: ci
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           node --input-type=module <<'JS'
-          const url = `${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${process.env.GITHUB_SHA}&status=success&per_page=100`;
+          import fs from 'node:fs';
+          const repo = process.env.GITHUB_REPOSITORY;
+          const url = `${process.env.GITHUB_API_URL}/repos/${repo}/actions/workflows/ci.yml/runs?head_sha=${process.env.GITHUB_SHA}&status=success&per_page=100`;
           const response = await fetch(url, {
             headers: { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/vnd.github+json' },
           });
           if (!response.ok) throw new Error(`Cannot check CI: HTTP ${response.status}`);
           const { workflow_runs: runs } = await response.json();
-          if (!runs.some(run => run.head_sha === process.env.GITHUB_SHA && run.conclusion === 'success')) {
-            throw new Error('This commit has no successful CI run. Wait for CI before deploying.');
-          }
+          const run = runs.find(r => r.head_sha === process.env.GITHUB_SHA && r.conclusion === 'success'
+            && r.event === 'push' && r.head_branch === 'main' && r.head_repository.full_name === repo);
+          if (!run) throw new Error('No successful main-branch CI for this commit. Wait for CI before deploying.');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `run_id=${run.id}\n`);
           JS
-      - run: npm ci --ignore-scripts
-      - run: npm run i18n
-      - run: npm run build
-      - run: npm run audit
-      - run: npx playwright install --with-deps chromium
-      - run: node tests/run.mjs release
-      - run: npm run package
-      - run: npm run test:package
+      - name: Download tested release bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.ci.outputs.run_id }}
+        run: |
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name release-bundle
+          sha256sum --check SHA256SUMS
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
 
   deploy:
-    needs: build
+    needs: prepare
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -68,3 +69,33 @@ jobs:
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [prepare, deploy]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Publish the tested offline package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ needs.prepare.outputs.run_id }}
+        run: |
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name release-bundle
+          sha256sum --check SHA256SUMS
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const { version } = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          if (process.env.GITHUB_REF_NAME !== `v${version}`) throw new Error('Tag and package version differ');
+          const section = fs.readFileSync('CHANGELOG.md', 'utf8').split(`## ${version} — `)[1]?.split('\n## ')[0];
+          if (!section) throw new Error('Release notes missing');
+          const notes = section.slice(section.indexOf('\n')).trim() + '\n\nPlay: https://zhechen-cs.github.io/great-tree-meadow/ · https://zhecc.itch.io/great-tree-meadow\n';
+          fs.writeFileSync(`${process.env.RUNNER_TEMP}/release-notes.md`, notes);
+          JS
+          gh release create "$GITHUB_REF_NAME" "release/great-tree-meadow-${GITHUB_REF_NAME#v}-web.zip" SHA256SUMS --verify-tag --title "Great Tree Meadow $GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"

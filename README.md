@@ -1,39 +1,34 @@
 # Great Tree Meadow
 
-*巨树花海 · 大樹と花の海*
+巨树花海 · 大樹と花の海
 
-A cozy 3D exploration game that runs in the browser. You and Dumpling, a small
-pink piglet, wander a fairyland meadow built on a shallow mirror lake, looking
-for the twelve glow seeds that once made the great tree in the middle bloom.
+Explore a meadow on a mirror lake with Dumpling, a small pink piglet. Find twelve glow seeds and make the great tree bloom again.
 
-[Play in your browser](https://chenzhez.github.io/great-tree-meadow/).
+**Play: [GitHub Pages](https://zhechen-cs.github.io/great-tree-meadow/) · [itch.io](https://zhecc.itch.io/great-tree-meadow)**
 
-![Title screen](docs/screenshots/title.png)
+[Download for offline play](https://github.com/zhechen-cs/great-tree-meadow/releases/latest) · [Watch the gameplay trailer (32 s)](https://github.com/zhechen-cs/great-tree-meadow/releases/download/v1.0.0/great-tree-meadow-trailer-en.mp4)
 
-![The meadow by day](docs/screenshots/meadow-day.png)
+A self-contained HTML game with **no runtime network requests**: Three.js rendering, procedural music and sound effects through Web Audio, and keyboard/mouse or mobile touch controls. The release pipeline tests the built HTML and package before promoting those exact artifacts.
 
-![The waterfall](docs/screenshots/waterfall-day.png)
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/meadow-lake.jpg" alt="The great tree reflected in the meadow lake"></td>
+    <td width="50%"><img src="docs/screenshots/mushroom-village.jpg" alt="Exploring the giant flowers and mushroom village"></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/dumpling-glow-seed.jpg" alt="Dumpling and the player finding a glow seed"></td>
+    <td width="50%"><img src="docs/screenshots/moonlit-lake.jpg" alt="The companions watching the moonlit lake"></td>
+  </tr>
+</table>
 
-![The great tree at night](docs/screenshots/tree-night.png)
+Frames from the real gameplay trailer.
 
-<p><img src="docs/screenshots/phone.png" alt="Phone layout" width="280"></p>
+## In the meadow
 
-## Features
-
-- Twenty-seven areas across a 300 m radius world: flower fields, a sunflower
-  maze, a cave behind a waterfall, floating islands, a mirror lake and more.
-- A companion that follows you, sniffs out seeds, plays fetch, naps and poses
-  for photos.
-- A home you can extend and furnish (47 kinds of furniture), cooking,
-  fishing, bug catching, a vegetable patch, a shop, a field guide,
-  achievements and daily tasks.
-- Day and night, generative music and sound effects (no audio files).
-- English, Chinese and Japanese, switchable at any time.
-- Keyboard and mouse, or touch controls on phones and tablets.
-- Comfort options: motion-comfort mode, reduced flashes, field of view,
-  camera sensitivity and inversion, text size, left-handed touch layout.
-- One self-contained HTML file (about 2.6 MB). It makes no network requests
-  and also works offline by opening the file directly.
+- 27 areas: flower fields, a sunflower maze, a waterfall cave, floating islands and more.
+- Dumpling follows, sniffs out seeds, plays fetch, naps and poses for photos.
+- Furnish and extend your home with 47 furniture types; cook, fish, catch bugs, garden and collect discoveries.
+- Day/night scenery, English/Chinese/Japanese, and comfort options for motion, flashes, camera and touch layout.
 
 ## Controls
 
@@ -49,78 +44,32 @@ for the twelve glow seeds that once made the great tree in the middle bloom.
 | Settings / pause | `Esc` | Gear button |
 | Camera | Drag, scroll to zoom, click the water to walk there | Drag, pinch |
 
-## Building
+## Build and test
 
-Requirements: Node.js 24 LTS (also used by CI).
+Node.js 24 LTS:
 
-```bash
+```sh
 npm ci --ignore-scripts
-npm run build          # dist/index.html, the release page
-npm run serve          # optional: serve dist/ on port 8080
+npx playwright install chromium firefox webkit
+npm run build:dev
+npm run release
+npm test
+npm run test:smoke
 ```
 
-The first build downloads the five fonts (about 40 MB) from a pinned commit of
-the [google/fonts](https://github.com/google/fonts) repository into `fonts/`
-and checks their SHA-256 hashes. Later builds work offline.
+`dist/index.html` runs directly from disk; `release/great-tree-meadow-<version>-web.zip` is ready for itch.io. `npm run serve` serves the build on port 8080.
 
-Other scripts:
+The first build downloads five fonts from a pinned [google/fonts](https://github.com/google/fonts) commit and verifies their SHA-256 hashes. Subsequent builds work offline. `npm run release` checks translations, builds, audits and verifies the package; CI additionally runs the full Chromium regression suite and Firefox/WebKit release smoke tests. These engine tests do not replace testing every mobile device or browser version.
 
-| Command | What it does |
-|---|---|
-| `npm run build:dev` | `build/dev.html` with the test hooks and system fonts, builds in under a second |
-| `npm run i18n` | checks that every source string has an English and a Japanese translation |
-| `npm test` | browser regression tests (needs `build:dev` and `build` first) |
-| `npm run audit` | pre-release checks: no debug code, no local paths, no external requests |
-| `npm run test:package` | checks the packaged HTML and license notices (run `package` first) |
-| `npm run package` | `release/great-tree-meadow-<version>-web.zip`, ready to upload to itch.io |
-| `npm run release` | i18n check, build, audit and package in one go |
-| `npm run format` | formats the code with Prettier |
+## Engineering
 
-The tests use Playwright with Chromium's software renderer, so they need no
-GPU. Install the browser once with `npx playwright install chromium`. A full
-run takes a few minutes because every rendered frame is slow on the CPU.
+- Three.js r128: toon shading, inverted-hull outlines, planar lake reflections and bloom.
+- Instanced grass and flowers, geometry merged by material, area-based distance culling and adaptive quality.
+- Companion state machine with breadcrumb following and obstacle checks; a separate home scene with furniture placement and collision validation.
+- Versioned, validated local saves with text export/import; all audio is synthesized locally.
 
-## Project layout
-
-```
-src/
-  index.html            page markup: HUD, dialogs, title screen
-  styles.css
-  js/                   game code, concatenated in a fixed order (see tools/build.mjs)
-    core.js             renderer, sky, mirror water, bloom, shared helpers
-    i18n.js             language system
-    characters.js       the boy and the piglet, outfits, animation
-    world-*.js          world registry, collisions and every area of the map
-    game.js             audio, save data, input, player, companion AI, camera, HUD
-    companion.js        Dumpling's menu and behaviors
-    home.js             the house: rooms, extensions, furniture, decorating
-    systems.js          coins, fishing, bugs, journal, achievements, tasks, garden, shop
-    settings.js         settings, title screen, quality profiles
-    main.js             main loop and start-up
-  locales/en.json       English text
-  locales/ja.json       Japanese text
-tools/                  build, font subsetting, i18n check, audit, packaging
-tests/                  Playwright regression tests and screenshot scenes
-licenses/               licenses of the bundled fonts
-docs/                   architecture notes and screenshots
-```
-
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains how the pieces fit
-together: rendering, collisions, the companion's path following, the house
-editor, localization and save data.
-
-## Technology
-
-- [three.js r128](https://threejs.org/) with a custom toon look: three-step
-  toon shading, inverted-hull outlines with wind sway, planar mirror
-  reflections for the lake, and bloom.
-- No framework and no runtime dependencies besides three.js.
-- Static geometry is merged per material and grouped by area for distance
-  culling; grass and flowers are instanced.
-- Audio is synthesised with the Web Audio API.
+See [architecture](docs/ARCHITECTURE.md) for the source layout and systems. CI retains a tested release bundle; Pages deploys it without rebuilding.
 
 ## License
 
-© 2026 Zhe. All rights reserved; see [LICENSE](LICENSE). three.js is MIT
-licensed and the fonts use the SIL Open Font License; see
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+© 2026 Zhe. Personal download and play of official releases are permitted; modification, redistribution and commercial reuse require written permission. See [LICENSE](LICENSE). Three.js and fonts retain their [third-party licenses](THIRD_PARTY_NOTICES.md).

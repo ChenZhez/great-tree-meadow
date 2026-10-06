@@ -35,8 +35,9 @@ jobs:
       - run: npm run build:dev
       - run: npm run build
       - run: npm run audit
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm test
+      - run: xvfb-run -a npm run test:smoke
       - run: npm run package
       - run: npm run test:package
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -45,3 +46,14 @@ jobs:
           name: test-screenshots
           path: build/shots
           if-no-files-found: ignore
+      - name: Record release checksums
+        run: sha256sum dist/index.html release/*.zip > SHA256SUMS
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-bundle
+          path: |
+            dist/index.html
+            release/*.zip
+            SHA256SUMS
+          if-no-files-found: error
+          retention-days: 30

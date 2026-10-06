@@ -178,6 +178,7 @@ $('#btnReset').onclick = () => {
   if (!confirm(tr('再确认一次：种子、家具、图鉴都会消失。'))) return;
   try {
     localStorage.removeItem(SAVE);
+    started = false;
   } catch (e) {}
   location.reload();
 };
@@ -188,7 +189,7 @@ $('#btnExport').onclick = () => {
   ta.value = txt;
   ta.select();
   try {
-    navigator.clipboard && navigator.clipboard.writeText(txt);
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
   } catch (e) {}
   note('存档已复制，保存好这段文字就行');
 };
@@ -203,10 +204,11 @@ $('#btnImport').onclick = () => {
     return;
   }
   try {
+    if (ta.value.length > 12000000) throw new TypeError('Save too large');
     const o = migrateSave(JSON.parse(decodeURIComponent(escape(atob(ta.value.trim())))));
-    if (!o || !Array.isArray(o.seeds)) throw 0;
     if (!confirm(tr('导入会覆盖现在的进度，确定吗？'))) return;
     localStorage.setItem(SAVE, JSON.stringify(o));
+    started = false;
     location.reload();
   } catch (e) {
     note('这段存档读不出来，检查一下有没有复制完整');
