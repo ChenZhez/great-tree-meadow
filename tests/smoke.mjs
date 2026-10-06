@@ -12,18 +12,27 @@ await new Promise((resolve) => server.listen(0, 'localhost', resolve));
 const url = `http://localhost:${server.address().port}/`;
 try {
   for (const engine of [firefox, webkit]) {
-    const browser = await engine.launch();
+    const browser = await engine.launch({
+      headless: process.platform !== 'linux',
+      env: { ...process.env, LIBGL_ALWAYS_SOFTWARE: '1' },
+      ...(engine === firefox ? { firefoxUserPrefs: { 'webgl.force-enabled': true } } : {}),
+    });
     try {
       const page = await browser.newPage({ viewport: { width: 900, height: 560 } });
       const errors = [],
         requests = [];
       page.on('pageerror', (e) => errors.push(e.message));
+      page.on('console', (message) => {
+        if (message.type() === 'error') errors.push(message.text());
+      });
       await page.route('**/*', (route) => {
         if (route.request().url() === url && route.request().isNavigationRequest()) return route.continue();
         requests.push(route.request().url());
         return route.abort();
       });
       await page.goto(url, { waitUntil: 'networkidle', timeout: 120000 });
+      assert.deepEqual(errors, [], `${engine.name()} startup errors`);
+      assert.equal(await page.locator('#err').isVisible(), false, `${engine.name()} graphics startup`);
       await page.locator('#btnGo').waitFor();
       assert.equal(await page.title(), 'Great Tree Meadow');
       assert.equal(await page.evaluate(() => '__game' in window), false);

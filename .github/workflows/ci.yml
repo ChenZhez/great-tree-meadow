@@ -37,7 +37,7 @@ jobs:
       - run: npm run audit
       - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm test
-      - run: npm run test:smoke
+      - run: xvfb-run -a npm run test:smoke
       - run: npm run package
       - run: npm run test:package
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
