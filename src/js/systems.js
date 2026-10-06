@@ -275,7 +275,10 @@ function renderTasks() {
   save.tasks.list.forEach((o) => {
     const d = document.createElement('div');
     d.className = 'recipe' + (o.done ? ' off' : '');
-    d.innerHTML = `<div><b>${taskText(o)}</b><small>${o.done ? '已完成' : o.c + ' / ' + o.n}</small></div><span class="coinTag">+${o.r}</span>`;
+    d.innerHTML = '<div><b></b><small></small></div><span class="coinTag"></span>';
+    d.querySelector('b').textContent = taskText(o);
+    d.querySelector('small').textContent = o.done ? '已完成' : o.c + ' / ' + o.n;
+    d.querySelector('.coinTag').textContent = '+' + o.r;
     box.appendChild(d);
   });
 }

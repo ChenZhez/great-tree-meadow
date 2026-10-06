@@ -389,6 +389,121 @@ test('economy, outfits and storage', async (b) => {
   await c2.close();
 });
 
+test('save: import rejects malformed data without replacing progress', async (b) => {
+  const { page, errors, ctx } = await openGame(b);
+  await G(page, () => {
+    __game.start();
+    __game.openSettings();
+    localStorage.setItem('great-tree-meadow-v1', JSON.stringify({ seeds: [], zones: [], coins: 57 }));
+  });
+  for (const value of [
+    { seeds: [], zones: {} },
+    { seeds: [], coins: '<img src=x>' },
+    { seeds: [], saveVersion: 99 },
+    { seeds: [], photos: [{ url: 'https://example.com/photo.jpg', cap: '' }] },
+  ]) {
+    await G(
+      page,
+      (value) => {
+        const ta = document.querySelector('#saveTxt');
+        ta.classList.remove('hidden');
+        ta.value = btoa(unescape(encodeURIComponent(JSON.stringify(value))));
+        document.querySelector('#btnImport').click();
+      },
+      value,
+    );
+    check(
+      results,
+      'invalid import preserves existing progress',
+      await G(page, () => JSON.parse(localStorage.getItem('great-tree-meadow-v1')).coins === 57),
+    );
+  }
+  const legacy = { seeds: ['runes'], zones: ['hills'], coins: 57 };
+  page.once('dialog', (dialog) => dialog.accept());
+  await Promise.all([
+    page.waitForEvent('load'),
+    G(
+      page,
+      (value) => {
+        document.querySelector('#saveTxt').value = btoa(JSON.stringify(value));
+        document.querySelector('#btnImport').click();
+      },
+      legacy,
+    ),
+  ]);
+  await page.waitForFunction(() => !!window.__game);
+  check(
+    results,
+    'legacy import restores progress after reload',
+    await G(page, () => __game.save.coins === 57 && __game.save.seeds.includes('runes')),
+  );
+  await G(page, () => {
+    __game.openSettings();
+    document.querySelector('#btnExport').click();
+  });
+  const exported = await G(page, () =>
+    JSON.parse(decodeURIComponent(escape(atob(document.querySelector('#saveTxt').value)))),
+  );
+  check(results, 'export retains imported progress and version', exported.saveVersion === 1 && exported.coins === 57);
+  check(results, 'import/export has no page errors', errors.length === 0, errors.join(' | '));
+  await G(page, () => {
+    __game.start();
+    __game.openSettings();
+  });
+  page.on('dialog', (dialog) => dialog.accept());
+  await Promise.all([page.waitForEvent('load'), G(page, () => document.querySelector('#btnReset').click())]);
+  await page.waitForFunction(() => !!window.__game);
+  check(
+    results,
+    'reset is not undone by the leaving page',
+    await G(page, () => __game.save.coins === 0 && __game.save.seeds.length === 0),
+  );
+  await ctx.close();
+});
+
+test('save: untrusted task labels render as text and stored data is validated', async (b) => {
+  const d = new Date(),
+    day = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  const { page, errors, ctx } = await openGame(b, {
+    save: {
+      seeds: [],
+      zones: [],
+      tasks: {
+        day,
+        list: [
+          { k: 'visit:hills', z: '<img src=x onerror="window.saveInjected=true">', n: 1, c: 0, r: 130, done: false },
+        ],
+      },
+    },
+  });
+  await G(page, () => {
+    __game.start();
+    __game.openTasks();
+  });
+  await settle(page);
+  check(
+    results,
+    'task markup stays inert text',
+    await G(
+      page,
+      () =>
+        !window.saveInjected &&
+        !document.querySelector('#taskList img') &&
+        document.querySelector('#taskList').textContent.includes('<img'),
+    ),
+  );
+  check(results, 'untrusted label causes no errors', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+  const invalid = await openGame(b, { save: { seeds: [], zones: 'broken', home: {} } });
+  check(
+    results,
+    'malformed stored save boots with fresh state',
+    (await G(invalid.page, () => __game.save.seeds.length === 0 && Array.isArray(__game.save.zones))) &&
+      invalid.errors.length === 0,
+  );
+  await invalid.ctx.close();
+});
+
 test('release: dist/index.html is self-contained and runs', async (b) => {
   const ctx = await b.newContext({ viewport: { width: 900, height: 560 } });
   const page = await ctx.newPage();

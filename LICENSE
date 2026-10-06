@@ -1,9 +1,15 @@
 Copyright (c) 2026 Zhe. All rights reserved.
 
-The source code, text, artwork and audio design of Great Tree Meadow are made
-available in this repository so that they can be read and studied. No license
-is granted to copy, modify, redistribute or publish the game or any part of it,
-in source or built form, without prior written permission from the author.
+You may download official released builds of Great Tree Meadow and play them
+for your personal, non-commercial use. You may retain copies of those builds
+on your own devices for that purpose.
 
-Third-party components used by the game keep their own licenses. See
-THIRD_PARTY_NOTICES.md and the licenses/ directory.
+The source code, text, artwork and audio design in this repository are
+available to read and study. Except for the personal-use permission above,
+no permission is granted to copy, modify, redistribute, publish, sublicense,
+sell or commercially reuse the game or any part of it, in source or built
+form, without prior written permission from the author.
+
+Third-party components retain their own licenses. These restrictions do not
+limit rights granted by those licenses. See THIRD_PARTY_NOTICES.md and the
+licenses/ directory.

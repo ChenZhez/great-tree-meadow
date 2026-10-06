@@ -660,22 +660,12 @@ function storageWarn() {
   const w = $('#storageWarn');
   if (w) w.classList.remove('hidden');
 }
-/* Upgrades older save data in place. Each step handles one version bump; keep them forever. */
-function migrateSave(s) {
-  if (!s || typeof s !== 'object') return {};
-  const v = +s.saveVersion || 0;
-  if (v < 1) {
-    if (!Array.isArray(s.seeds)) s.seeds = [];
-    if (!Array.isArray(s.zones)) s.zones = [];
-  }
-  s.saveVersion = SAVE_VERSION;
-  return s;
-}
+
 try {
   const s = JSON.parse(localStorage.getItem(SAVE));
   if (s) save = Object.assign(save, migrateSave(s));
 } catch (e) {
-  if (e && e.name !== 'SyntaxError') storageOK = false;
+  if (e && e.name !== 'SyntaxError' && e.name !== 'TypeError') storageOK = false;
 }
 try {
   localStorage.setItem(SAVE + '-probe', '1');
@@ -2744,7 +2734,13 @@ function updHUD(dt) {
       : null;
   if (pigMenuOpen) place(pigMenuEl, tmp2.copy(pig.g.position).setY(pig.g.position.y + 1.2));
   if (nearInter) {
-    promptEl.innerHTML = (isTouch ? '' : '<kbd>E</kbd>') + nearInter.label;
+    promptEl.replaceChildren();
+    if (!isTouch) {
+      const key = document.createElement('kbd');
+      key.textContent = 'E';
+      promptEl.appendChild(key);
+    }
+    promptEl.appendChild(document.createTextNode(nearInter.label));
     promptEl.classList.add('on');
     place(promptEl, tmp.set(nearInter.x, gY(nearInter.x, nearInter.z, nearInter.level) + 2.4, nearInter.z));
     useBtn.firstChild.nodeValue = '互动';

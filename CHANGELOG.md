@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 — 2026-10-06
+
+- Validate imported and stored saves, reject malformed records and external photo URLs.
+- Render saved task text without interpreting HTML.
+- Prevent automatic saves from overwriting imported progress or undoing a reset.
+- Clarify personal-use permission for official releases.
+
 ## 1.0.0 — 2026-10
 
 First public release.
