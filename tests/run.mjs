@@ -439,8 +439,13 @@ test('save: import rejects malformed data without replacing progress', async (b)
   );
   await G(page, () => {
     __game.openSettings();
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: () => Promise.reject(new DOMException('Clipboard denied', 'NotAllowedError')) },
+      configurable: true,
+    });
     document.querySelector('#btnExport').click();
   });
+  await settle(page);
   const exported = await G(page, () =>
     JSON.parse(decodeURIComponent(escape(atob(document.querySelector('#saveTxt').value)))),
   );

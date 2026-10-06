@@ -4,6 +4,7 @@
 
 - Validate imported and stored saves, reject malformed records and external photo URLs.
 - Render saved task text without interpreting HTML.
+- Keep export working when clipboard permission is denied.
 - Prevent automatic saves from overwriting imported progress or undoing a reset.
 - Clarify personal-use permission for official releases.
 

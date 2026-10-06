@@ -660,7 +660,6 @@ function storageWarn() {
   const w = $('#storageWarn');
   if (w) w.classList.remove('hidden');
 }
-
 try {
   const s = JSON.parse(localStorage.getItem(SAVE));
   if (s) save = Object.assign(save, migrateSave(s));

@@ -189,7 +189,7 @@ $('#btnExport').onclick = () => {
   ta.value = txt;
   ta.select();
   try {
-    navigator.clipboard && navigator.clipboard.writeText(txt);
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
   } catch (e) {}
   note('存档已复制，保存好这段文字就行');
 };
